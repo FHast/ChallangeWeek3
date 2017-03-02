@@ -12,13 +12,21 @@ public class TokenRing implements IMACProtocol {
 
 	public final int ID;
 	public static final int TOKEN = 0;
-	public static final int AMOUNT = 5;
 	public int slotnumber = 0;
-	public int counter = AMOUNT;
+	public int counter = 4;
 
 	public TokenRing() {
 		ID = new Random().nextInt(1000);
 		System.out.println("my ID: " + ID);
+	}
+	
+	public int count(int localQueueLength) {
+		if (localQueueLength < 5) {
+			return 4;
+		} else if (localQueueLength > 50) {
+			return (int) (localQueueLength * 0.25);
+		}
+		return (int) (localQueueLength * 0.4);
 	}
 
 	@Override
@@ -36,7 +44,7 @@ public class TokenRing implements IMACProtocol {
 		if (localQueueLength == 0) {
 			if (controlInformation == TOKEN + ID) {
 				System.out.println("SLOT - giving away Token");
-				counter = AMOUNT;
+				counter = count(localQueueLength);
 				return new TransmissionInfo(TransmissionType.NoData, TOKEN);
 			}
 			System.out.println("SLOT - No data to send.");
@@ -46,7 +54,7 @@ public class TokenRing implements IMACProtocol {
 		boolean sending = false;
 
 		if (controlInformation == 0 || controlInformation == TOKEN || previousMediumState == MediumState.Idle) {
-			boolean permission = new Random().nextInt(100) < 80;
+			boolean permission = new Random().nextInt(100) < 90;
 			if (previousMediumState == MediumState.Collision) {
 				sending = new Random().nextInt(100) < 25;
 			} else if (permission) {
@@ -58,7 +66,7 @@ public class TokenRing implements IMACProtocol {
 				counter--;
 			} else {
 				sending = false;
-				counter = AMOUNT;
+				counter = count(localQueueLength);
 			}
 		}
 
