@@ -11,7 +11,6 @@ import java.util.Random;
 public class TokenRing implements IMACProtocol {
 
 	public final int ID;
-	public static final int TOKEN = 0;
 	public int slotnumber = 0;
 	public int counter = 4;
 
@@ -21,12 +20,7 @@ public class TokenRing implements IMACProtocol {
 	}
 	
 	public int count(int localQueueLength) {
-		if (localQueueLength < 5) {
-			return 4;
-		} else if (localQueueLength > 50) {
-			return (int) (localQueueLength * 0.25);
-		}
-		return (int) (localQueueLength * 0.4);
+		return (int) (Math.sqrt(localQueueLength) * 1.4 + 3.4);
 	}
 
 	@Override
@@ -42,10 +36,10 @@ public class TokenRing implements IMACProtocol {
 
 		// No data to send, just be quiet
 		if (localQueueLength == 0) {
-			if (controlInformation == TOKEN + ID) {
+			if (controlInformation == ID) {
 				System.out.println("SLOT - giving away Token");
 				counter = count(localQueueLength);
-				return new TransmissionInfo(TransmissionType.NoData, TOKEN);
+				return new TransmissionInfo(TransmissionType.NoData, 0);
 			}
 			System.out.println("SLOT - No data to send.");
 			return new TransmissionInfo(TransmissionType.Silent, 0);
@@ -53,14 +47,14 @@ public class TokenRing implements IMACProtocol {
 		// Data to send!
 		boolean sending = false;
 
-		if (controlInformation == 0 || controlInformation == TOKEN || previousMediumState == MediumState.Idle) {
-			boolean permission = new Random().nextInt(100) < 90;
+		if (controlInformation == 0) {
+			boolean permission = new Random().nextInt(100) < 100;
 			if (previousMediumState == MediumState.Collision) {
 				sending = new Random().nextInt(100) < 25;
 			} else if (permission) {
 				sending = true;
 			}
-		} else if (controlInformation == TOKEN + ID) {
+		} else if (controlInformation == ID) {
 			if (counter > 0) {
 				sending = true;
 				counter--;
@@ -72,7 +66,11 @@ public class TokenRing implements IMACProtocol {
 
 		if (sending) {
 			System.out.println("SLOT - Sending data & taking token.");
-			return new TransmissionInfo(TransmissionType.Data, TOKEN + ID);
+			if (counter == 0 || localQueueLength == 1) {
+				counter = count(localQueueLength);
+				return new TransmissionInfo(TransmissionType.Data, 0);
+			}
+			return new TransmissionInfo(TransmissionType.Data, ID);		
 		} else {
 			System.out.println("SLOT - idle");
 			return new TransmissionInfo(TransmissionType.Silent, 0);
