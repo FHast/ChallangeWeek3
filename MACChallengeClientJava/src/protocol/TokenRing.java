@@ -15,12 +15,12 @@ public class TokenRing implements IMACProtocol {
 	public int counter = 4;
 
 	public TokenRing() {
-		ID = new Random().nextInt(1000);
+		ID = new Random().nextInt(1000000000);
 		System.out.println("my ID: " + ID);
 	}
 	
 	public int count(int localQueueLength) {
-		return (int) (Math.sqrt(localQueueLength) * 1.4 + 3.4);
+		return (int) (Math.sqrt(localQueueLength) * 1.4 + 3.1);
 	}
 
 	@Override
@@ -55,13 +55,8 @@ public class TokenRing implements IMACProtocol {
 				sending = true;
 			}
 		} else if (controlInformation == ID) {
-			if (counter > 0) {
-				sending = true;
-				counter--;
-			} else {
-				sending = false;
-				counter = count(localQueueLength);
-			}
+			sending = true;
+			counter--;
 		}
 
 		if (sending) {
