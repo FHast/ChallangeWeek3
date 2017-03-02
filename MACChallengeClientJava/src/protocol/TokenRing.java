@@ -15,10 +15,13 @@ public class TokenRing implements IMACProtocol {
 	public int counter = 4;
 
 	public TokenRing() {
+		// Random ID for distinction between clients.
 		ID = new Random().nextInt(1000000000);
 		System.out.println("my ID: " + ID);
 	}
 	
+	// Amount of Data being sent without changing to next client.
+	// If the queue is longer, the amount gets higher.
 	public int count(int localQueueLength) {
 		return (int) (Math.sqrt(localQueueLength) * 1.4 + 3.1);
 	}
@@ -27,45 +30,50 @@ public class TokenRing implements IMACProtocol {
 	public TransmissionInfo TimeslotAvailable(MediumState previousMediumState, int controlInformation,
 			int localQueueLength) {
 		slotnumber++;
-
+		
+		// Informations about current slot.
 		System.out.println("-------------------------------");
 		System.out.println("SLOT - " + slotnumber);
 		System.out.println("last state: " + previousMediumState);
 		System.out.println("last controlInfo: " + controlInformation);
 		System.out.println("Queue length: " + localQueueLength);
 
-		// No data to send, just be quiet
+		// No data to send, just be quiet.
 		if (localQueueLength == 0) {
-			if (controlInformation == ID) {
-				System.out.println("SLOT - giving away Token");
-				counter = count(localQueueLength);
-				return new TransmissionInfo(TransmissionType.NoData, 0);
-			}
 			System.out.println("SLOT - No data to send.");
 			return new TransmissionInfo(TransmissionType.Silent, 0);
 		}
+		
 		// Data to send!
 		boolean sending = false;
 
+		// No one has the token.
 		if (controlInformation == 0) {
-			boolean permission = new Random().nextInt(100) < 100;
+			// Last state was collision.
 			if (previousMediumState == MediumState.Collision) {
+				// Change of 25% for sending.
 				sending = new Random().nextInt(100) < 25;
-			} else if (permission) {
+			// Last state was Idle or Succes.
+			} else {
 				sending = true;
 			}
+		// This client has the token
 		} else if (controlInformation == ID) {
 			sending = true;
+			// The amount of data which still can be sent is reduced by one.
 			counter--;
 		}
 
+		// Data will be sent.
 		if (sending) {
 			System.out.println("SLOT - Sending data & taking token.");
+			// Last data being sent in this turn, setting token free and reseting counter.
 			if (counter == 0 || localQueueLength == 1) {
 				counter = count(localQueueLength);
 				return new TransmissionInfo(TransmissionType.Data, 0);
 			}
 			return new TransmissionInfo(TransmissionType.Data, ID);		
+		// No data will be sent
 		} else {
 			System.out.println("SLOT - idle");
 			return new TransmissionInfo(TransmissionType.Silent, 0);
